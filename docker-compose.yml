@@ -1,8 +1,25 @@
+volumes:
+  chat_app_postgres_volume:
+
+networks:
+  chat_app_network:
+
 services:
+  postgres:
+    image: postgres:16
+    container_name: chat_app_postgres
+    restart: always
+    expose:
+      - 5432
+    volumes:
+      - chat_app_postgres_volume:/var/lib/postgresql/data
+    networks:
+      - chat_app_network
+    environment:
+      POSTGRES_DB: chat_app
+      POSTGRES_PASSWORD: test1234
   app:
-    build:
-      context: .
-      dockerfile: ./dockerfiles/chat_app/Dockerfile
+    build: .
     container_name: chat_app
     restart: always
     ports:
@@ -15,20 +32,6 @@ services:
       - chat_app_network
     env_file:
       - .env
-  postgres:
-    build:
-      dockerfile: ./dockerfiles/postgresql/Dockerfile
-    container_name: chat_app_postgres
-    restart: always
-    ports:
-      - 5433:5433
-    volumes:
-      - chat_app_postgres_volume:/var/lib/postgresql/pg_data
-    networks:
-      - chat_app_network
-    environment:
-      POSTGRES_DB: chat_app
-      POSTGRES_PASSWORD: test1234
   adminer:
     image: adminer
     restart: always
@@ -39,8 +42,3 @@ services:
     networks:
       - chat_app_network
 
-volumes:
-  chat_app_postgres_volume:
-
-networks:
-  chat_app_network:
