@@ -5,14 +5,14 @@ from chatapp.users.api.views import AuthViewSet, ProfileViewSet
 router = SimpleRouter()
 
 router.register(
-    prefix='auth',
+    prefix="auth",
     viewset=AuthViewSet,
-    basename='auth'
+    basename="auth"
 )
 router.register(
-    prefix='profiles',
+    prefix="profiles",
     viewset=ProfileViewSet,
-    basename='profiles'
+    basename="profiles"
 )
 
 urlpatterns = [
