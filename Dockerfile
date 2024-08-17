@@ -18,7 +18,7 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
-
+#CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
+CMD ["python" , "manage.py" , "runserver" , "0.0.0.0:8000"]
 
 
