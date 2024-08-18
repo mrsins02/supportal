@@ -81,5 +81,6 @@ class MessageAdmin(admin.ModelAdmin):
         )}),
         ("Attachments", {"fields": (
             "message",
+            "attachment",
         )}),
     )

@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, GenericViewSet
 
 from chatapp.chat.api.serializers import ChatSerializer, MessageSerializer, \
-    NewChatSerializer
+    NewChatSerializer, ChatDetailSerializer
 from chatapp.chat.models import Chat
 from chatapp.users.api.serializers import SendOTPSerializer, LoginSerializer, \
     ProfileSerializer
@@ -73,6 +73,9 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     @extend_schema(methods=["GET"], responses=ProfileSerializer)
     @action(methods=["GET"], detail=False, url_path="user-chats", url_name="user-chats")
     def user_chats(self, request):
+        """"
+        Returns a list of user we chat with them before
+        """
         user = request.user
         chat_ids = tuple(user.chat_set.all().values_list("id", flat=True))
         with connection.cursor() as cursor:
@@ -86,10 +89,13 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         response_serializer = ProfileSerializer(instance=user_chat_list, many=True)
         return Response(data=response_serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(methods=["POST"], request=UserIDSerializer, responses=ChatSerializer)
+    @extend_schema(methods=["POST"], request=UserIDSerializer, responses=ChatDetailSerializer)
     @action(methods=["POST"], detail=False, url_path="get-user-chat",
             url_name="get-user-chat")
     def get_user_chat(self, request):
+        """
+        Return the chat messages between us and given phone number
+        """
         data_serializer = UserIDSerializer(data=request.data)
         if data_serializer.is_valid():
             user = get_object_or_404(User.objects.exclude(pk=request.user.pk),
@@ -97,8 +103,7 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             chat = Chat.objects.filter(members=request.user.pk).filter(
                 members=user.pk).first()
             if chat:
-                response_serializer = MessageSerializer(instance=chat.message_set.all(),
-                                                        many=True)
+                response_serializer = ChatDetailSerializer(instance=chat)
                 return Response(data=response_serializer.data,
                                 status=status.HTTP_200_OK)
             return Response(data={"error": "chat not found"},

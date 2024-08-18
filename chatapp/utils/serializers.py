@@ -6,6 +6,9 @@ User = get_user_model()
 
 
 class UserIDSerializer(serializers.Serializer):
+    """
+    Serializer for views need user_id and validate it
+    """
     user = serializers.IntegerField()
 
     def validate_user(self, user):

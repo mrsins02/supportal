@@ -50,4 +50,21 @@ class MessageSerializer(serializers.ModelSerializer):
             'created_at',
             'author',
             'message',
+            'attachment',
+        )
+
+
+class ChatDetailSerializer(serializers.ModelSerializer):
+    messages = serializers.SerializerMethodField()
+
+    def get_messages(self, obj):
+        return MessageSerializer(obj.message_set.all(), many=True).data
+
+    class Meta:
+        model = Chat
+        fields = (
+            'id',
+            'created_at',
+            'members',
+            'messages',
         )

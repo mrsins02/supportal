@@ -1,5 +1,6 @@
 volumes:
   chat_app_postgres_volume:
+  redis_data:
 
 networks:
   chat_app_network:
@@ -41,4 +42,13 @@ services:
       - postgres
     networks:
       - chat_app_network
-
+  redis:
+    image: redis:6
+    container_name: chat_app_redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    networks:
+      - chat_app_network

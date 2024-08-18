@@ -4,10 +4,16 @@ import string
 
 
 def get_file_extension(filename: str) -> str:
+    """
+    Returns given file's extension
+    """
     return os.path.splitext(filename)[1]
 
 
 def upload_location(instance, filename: str) -> str:
+    """
+    Returns a path to save files in media based of model name
+    """
     return f'{instance.__class__.__name__.lower()}/{instance.id}{get_file_extension(filename)}'
 
 

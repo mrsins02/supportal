@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from chatapp.utils.models import upload_location
+
 User = get_user_model()
 
 
@@ -32,6 +34,12 @@ class Message(models.Model):
     )
     message = models.TextField(
         verbose_name="Message"
+    )
+    attachment = models.FileField(
+        upload_to=upload_location,
+        blank=True,
+        null=True,
+        verbose_name="Attachment",
     )
     author = models.ForeignKey(
         to=User,
