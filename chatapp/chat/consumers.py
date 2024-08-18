@@ -22,20 +22,20 @@ class ChatConsumer(WebsocketConsumer):
         chat = Chat.objects.filter(pk=self.chat_id)
         if not chat.exists():
             self.send(text_data=json.dumps({"error": "chat not found"}))
-            self.close(code=404)
+            self.close(code=1011)
         chat = chat.first()
 
         # validate user
         self.user = self.scope["user"]
         if not self.user.is_authenticated:
             self.send(text_data=json.dumps({"error": self.scope["error"]}))
-            self.close(code=401)
+            self.close(code=3000)
 
         # validate user to be member of the chat
         if self.user not in chat.members.all():
             self.send(
                 text_data=json.dumps({"error": "you are not a member of this chat"}))
-            self.close(code=403)
+            self.close(code=3003)
 
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(
@@ -48,7 +48,8 @@ class ChatConsumer(WebsocketConsumer):
 
         # validate empty message
         if len(data.get("message", "")) < 1:
-            self.send({"error": "message is empty"})
+            self.send(text_data=json.dumps({"error": "message is empty"}))
+            self.close(code=1011)
 
         new_message = Message.objects.create(
             chat_id=self.chat_id,
