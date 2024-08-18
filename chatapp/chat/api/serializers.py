@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
+from chatapp.chat.filters import MessageSearchFilter
 from chatapp.chat.models import Chat, Message
 from chatapp.utils.serializers import UserIDSerializer
 
@@ -58,7 +59,12 @@ class ChatDetailSerializer(serializers.ModelSerializer):
     messages = serializers.SerializerMethodField()
 
     def get_messages(self, obj):
-        return MessageSerializer(obj.message_set.all(), many=True).data
+        messages = MessageSearchFilter.filter_queryset(
+            request=self.context.get('request'),
+            queryset=obj.message_set.all()
+        )
+        # messages = obj.message_set.all()
+        return MessageSerializer(instance=messages, many=True).data
 
     class Meta:
         model = Chat

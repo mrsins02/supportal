@@ -1,15 +1,16 @@
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin, ListModelMixin
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet, GenericViewSet
 
-from chatapp.chat.api.serializers import ChatSerializer, MessageSerializer, \
-    NewChatSerializer, ChatDetailSerializer
+from chatapp.chat.api.serializers import ChatSerializer, NewChatSerializer, \
+    ChatDetailSerializer
 from chatapp.chat.models import Chat
 from chatapp.users.api.serializers import SendOTPSerializer, LoginSerializer, \
     ProfileSerializer
@@ -70,7 +71,33 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             return Response(data=data_serializer.data, status=status.HTTP_200_OK)
         return Response(data=data_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @extend_schema(methods=["GET"], responses=ProfileSerializer)
+    @extend_schema(methods=["GET"], responses=ProfileSerializer,
+                   parameters=[
+                       OpenApiParameter(
+                           type=OpenApiTypes.INT,
+                           name="limit",
+                           description="Number of results to return per page.",
+                           location=OpenApiParameter.QUERY,
+                       ),
+                       OpenApiParameter(
+                           type=OpenApiTypes.INT,
+                           name="offset",
+                           description="The initial index from which to return the results.",
+                           location=OpenApiParameter.QUERY,
+                       ),
+                       OpenApiParameter(
+                           type=OpenApiTypes.STR,
+                           name="ordering",
+                           description="Which field to use when ordering the results",
+                           location=OpenApiParameter.QUERY,
+                       ),
+                       OpenApiParameter(
+                           type=OpenApiTypes.STR,
+                           name="search",
+                           description="Search for usernames or phone numbers.",
+                           location=OpenApiParameter.QUERY,
+                       ),
+                   ])
     @action(methods=["GET"], detail=False, url_path="user-chats", url_name="user-chats")
     def user_chats(self, request):
         """"
@@ -79,17 +106,32 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         user = request.user
         chat_ids = tuple(user.chat_set.all().values_list("id", flat=True))
         with connection.cursor() as cursor:
-            cursor.execute(
-                f"""SELECT user_id FROM chat_chat_members 
-                    WHERE chat_id IN {chat_ids} 
-                    AND user_id != {request.user.id}""")
+            query = """
+                SELECT user_id 
+                FROM chat_chat_members 
+                WHERE chat_id IN %s AND user_id != %s
+            """
+            cursor.execute(query, [chat_ids, user.id])
             rows = cursor.fetchall()
         user_ids = [row[0] for row in rows]
-        user_chat_list = User.objects.filter(pk__in=user_ids)
+        user_chat_list = self.filter_queryset(User.objects.filter(pk__in=user_ids))
+        page = self.paginate_queryset(user_chat_list)
+        if page is not None:
+            response_serializer = ProfileSerializer(instance=page, many=True)
+            return self.get_paginated_response(response_serializer.data)
         response_serializer = ProfileSerializer(instance=user_chat_list, many=True)
         return Response(data=response_serializer.data, status=status.HTTP_200_OK)
 
-    @extend_schema(methods=["POST"], request=UserIDSerializer, responses=ChatDetailSerializer)
+    @extend_schema(methods=["POST"], request=UserIDSerializer,
+                   responses=ChatDetailSerializer,
+                   parameters=[
+                       OpenApiParameter(
+                           type=OpenApiTypes.STR,
+                           name="search",
+                           description="Search for usernames or phone numbers.",
+                           location=OpenApiParameter.QUERY,
+                       ),
+                   ])
     @action(methods=["POST"], detail=False, url_path="get-user-chat",
             url_name="get-user-chat")
     def get_user_chat(self, request):
@@ -103,7 +145,8 @@ class ProfileViewSet(ListModelMixin, RetrieveModelMixin, GenericViewSet):
             chat = Chat.objects.filter(members=request.user.pk).filter(
                 members=user.pk).first()
             if chat:
-                response_serializer = ChatDetailSerializer(instance=chat)
+                response_serializer = ChatDetailSerializer(instance=chat,
+                                                           context={"request": request})
                 return Response(data=response_serializer.data,
                                 status=status.HTTP_200_OK)
             return Response(data={"error": "chat not found"},
