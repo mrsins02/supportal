@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             model_name='user',
             name='otp_code',
             field=models.CharField(blank=True,
-                                   default=chatapp.users.models.user_otp_generator,
-                                   max_length=4, verbose_name='OTP Code'),
+                                   default=chatapp.users.models.generate_otp,
+                                   max_length=5, verbose_name='OTP Code'),
         ),
     ]

@@ -2,6 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import RefreshToken
+
+from chatapp.utils.models import GenerateRandomCode
 from chatapp.utils.validators import PhoneNumberValidator
 
 User = get_user_model()
@@ -42,8 +44,8 @@ class LoginSerializer(serializers.Serializer):
     def to_representation(self, instance):
         user = self.context["user"]
         refresh = RefreshToken.for_user(user)
-        # user.otp_code = GenerateRandomCode(length=5)()
-        # user.save()
+        user.otp_code = GenerateRandomCode(length=5)()
+        user.save()
         return {
             "access": str(refresh.access_token),
             "refresh": str(refresh),

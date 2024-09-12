@@ -4,7 +4,9 @@ from django.db import models
 from chatapp.utils.models import upload_location, GenerateRandomCode
 from chatapp.utils.validators import PhoneNumberValidator
 
-user_otp_generator = GenerateRandomCode(length=5)
+
+def generate_otp():
+    return GenerateRandomCode(length=5)()
 
 
 class User(AbstractUser):
@@ -37,8 +39,8 @@ class User(AbstractUser):
     otp_code = models.CharField(
         max_length=5,
         blank=True,
-        # default=user_otp_generator,
-        default="12345",
+        default=generate_otp,
+        # default="12345",
         verbose_name="OTP Code"
     )
 

@@ -56,20 +56,23 @@ class ChatConsumer(WebsocketConsumer):
             message=data.get("message"),
             author_id=self.user.pk,
         )
+        data_dict = {
+            "id": new_message.pk,
+            "created_at": new_message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "author": new_message.author_id,
+            "message": new_message.message,
+        }
         attachment = data.get("attachment")
         if attachment:
             # convert file from base64 and save to field
             file_name, file_content = self.proccess_file(attachment, self.chat_name)
             new_message.attachment = ContentFile(file_content, name=file_name)
-        new_message.save()
+            new_message.save()
+            data_dict["attachment"] = new_message.attachment.url
+        else:
+            new_message.save()
 
-        send_data = json.dumps({
-            "id": new_message.pk,
-            "created_at": new_message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-            "author": new_message.author_id,
-            "message": new_message.message,
-            "attachment": new_message.attachment.url
-        })
+        send_data = json.dumps(data_dict)
 
         # send the message to chat
         async_to_sync(self.channel_layer.group_send)(

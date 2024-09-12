@@ -14,6 +14,7 @@ from chatapp.chat.api.serializers import ChatSerializer, NewChatSerializer, \
 from chatapp.chat.models import Chat
 from chatapp.users.api.serializers import SendOTPSerializer, LoginSerializer, \
     ProfileSerializer
+from chatapp.utils.models import GenerateRandomCode
 from chatapp.utils.serializers import UserIDSerializer
 
 User = get_user_model()
@@ -31,7 +32,6 @@ class AuthViewSet(ViewSet):
             data = data_serializer.validated_data
             user, created = User.objects.get_or_create(
                 phone_number=data.get("phone_number"))
-            user.save()
             # send_sms(user.phone_number,user.otp_code)
             return Response(data={"data": "an otp has been sent to given phone number"},
                             status=status.HTTP_200_OK)
