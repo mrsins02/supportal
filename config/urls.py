@@ -14,33 +14,50 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf.urls.static import static
-from django.contrib import admin
-from django.urls import path, include
 
 from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib import admin
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls')),
+    path(
+        route="admin/",
+        view=admin.site.urls,
+    ),
+    path(
+        route="api-auth/",
+        view=include(arg="rest_framework.urls"),
+    ),
 ]
 
 # static and Media
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(
+        prefix=settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROO,
+    )
+    urlpatterns += static(
+        prefix=settings.STATIC_URL,
+        document_root=settings.STATIC_ROOT,
+    )
 
 # Api Routes
 urlpatterns += [
-    path('api/', include('chatapp.api_routes')),
+    path(
+        route="api/v1/",
+        view=include(arg="config.api_routes"),
+    ),
 ]
 
 # Api Docs
 urlpatterns += [
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/swagger/', SpectacularSwaggerView.as_view(url_name='schema'),
-         name='swagger'),
-
+    path(route="api/schema/", view=SpectacularAPIView.as_view(), name="schema"),
+    path(
+        route="api/docs/",
+        view=SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger",
+    ),
 ]

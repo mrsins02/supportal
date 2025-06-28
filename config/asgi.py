@@ -13,16 +13,16 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
 
 import config.ws_routes
-from chatapp.utils.middlewares import JWTMiddleware
+from supportal.utils.middlewares import JWTMiddleware
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-    "websocket": JWTMiddleware(
-        URLRouter(
-            config.ws_routes.url_patterns
-        )
-    ),
-}
+os.environ.setdefault(key="DJANGO_SETTINGS_MODULE", value="config.settings")
+
+application = ProtocolTypeRouter(
+    application_mapping={
+        "http": get_asgi_application(),
+        "websocket": JWTMiddleware(
+            inner=URLRouter(routes=config.ws_routes.url_patterns)
+        ),
+    }
 )

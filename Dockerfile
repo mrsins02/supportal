@@ -1,24 +1,54 @@
-FROM python:alpine
-
-
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+FROM python:3.10 AS builder
 
 WORKDIR /app
 
-ADD requirements.txt /app/
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PATH="/root/.local/bin:$PATH"
 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install build dependencies
+RUN apt update && apt install -y gettext curl build-essential
 
-ADD . /app/
+COPY pyproject.toml poetry.lock ./
+RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-interaction --no-ansi --with dev
 
-ADD entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Copy app files
+COPY . .
 
-RUN python manage.py collectstatic --noinput
+# ---------- Stage 2: Final Runtime Stage ----------
+FROM python:3.10
 
-#CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
-CMD ["python" , "manage.py" , "runserver" , "0.0.0.0:8000"]
+WORKDIR /app
 
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
+# Set environments
+ARG POSTGRES_HOST
+ARG MYSQL_PORT
+ENV POSTGRES_HOST=${POSTGRES_HOST}
+ENV POSTGRES_PORT=${POSTGRES_PORT}
+ENV DJANGO_SETTINGS_MODULE=config.settings
+
+# Install required runtime packages
+RUN apt update && apt install -y gettext curl
+
+# Copy installed packages from builder
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /app /app
+
+# Get wait-for-it script
+RUN curl -o /usr/local/bin/wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+ && chmod +x /usr/local/bin/wait-for-it.sh
+
+# Set entrypoint
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Collect static files (optional)
+RUN python3 manage.py collectstatic --noinput
+# RUN python3 manage.py compilemessages
+
+ENTRYPOINT ["/entrypoint.sh"]
